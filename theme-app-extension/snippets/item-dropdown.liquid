@@ -1,0 +1,20 @@
+
+<label for="ProductSelect-option-{{ forloop.index0 }}">
+    Add Another Item   
+</label>
+<select id="ProductSelect-{{ forloop.index0 }}" data-index="option{{ forloop.index }}">
+  
+  <option>Add Another Product</option>
+    
+  {% for collection in collections %}
+      <option value="{{ collection.title | escape }}" {% if option.selected_value == value %} selected="selected"{% endif %}>
+          {{ collection.title }}
+          {%- if selected-%}
+            <div>Option Selected</div>
+          {%- endif -%}
+
+
+      </option>
+    {%- endfor -%}
+  </select>
+

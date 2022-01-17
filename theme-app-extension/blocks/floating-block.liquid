@@ -1,0 +1,402 @@
+{%assign product = block.settings.product%}
+{%assign thresholdPrice = block.settings.cart_threshold | times:100 %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons" media="all">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
+<div class="gb-center" >
+    <button class="anchor material-icons" is="grab-bag" threshold="{{thresholdPrice}}" id="grab-bag" onclick="closeDiv()" style="background-color:{{block.settings.bgColour}}">
+        <span class="gb-material-icons material-icons" style="color:{{block.settings.iconColour}}">card_giftcard</span>
+        <!--
+        <div class="bell" id="bell-1">
+            <div class="anchor material-icons layer-1">notifications_active</div>
+            <div class="anchor material-icons layer-2">notifications</div>
+            <div class="anchor material-icons layer-3">notifications</div>
+        </div>
+        -->
+        
+    </button>
+    <div class="notification center"><span class="notification-text">1</span></div>
+</div>
+
+<div class="modal" id="gb-pop-up" style="display:none">
+    <div class="modal-content" id="gb-overlayContent" >
+        <span class="overlay-text">Change this inner html</span>
+    </div>
+    <div class="modal-content" id="gb-giftContent">
+        <span>You Qualify For a Free Gift!</span>
+        {{product.title}}
+        <form method="post" action="/cart/add" id="gb-select-form">
+            {% if product.has_only_default_variant %}
+                {% for variant in product.variants %}
+                {% assign words = variant.title | split: ' ' %}
+                    <div class="variant-option" onclick="variantSelected(this.id)" id="{{ variant.id }}">
+                    <img class="modal-image" src="{{product.featured_image | img_url: 'large'}}" width="40" height="40"
+                            alt="{{product.title}}"/>
+                    <span class="modal-variant-title">{{product.title}}</span>
+                    </div>
+                    <span name="variantSelectid" id="variantSelectID" value="{{ variant.id }}" type="hidden"></span> 
+                {% endfor %}
+
+                {%else%}  
+                {% for variant in product.variants %}
+                    {% assign words = variant.title | split: ' ' %}
+                        <div class="variant-option" onclick="variantSelected(this.id)" id="{{ variant.id }}">
+                            {%if variant.image.src%}
+                            <img class="modal-image" src="{{variant.image.src | img_url: 'large'}}" width="40" height="40"
+                                    alt="{{variant.title}}"/>
+                            <span class="modal-variant-title">{{variant.title}}</span>
+                            {%else%}
+                            <img class="modal-image" src="{{product.featured_image.src | img_url: 'large'}}" width="40" height="40"
+                            alt="{{variant.title}}"/>
+                            <span class="modal-variant-title">{{variant.title}}</span>
+                            {%endif%}
+                        </div>
+                        <span name="variantSelectid" id="variantSelectID" value="{{ variant.id }}" type="hidden"></span>    
+                {% endfor %}
+        {% endif %}
+        <input name="id" value="" id="gb-idInput" type="hidden"/>             
+            <button class="gb-submit-button" id="gb-submit-btn" type="button" name="add" onclick="formSubmit()">
+                <p id="btnText">{{block.settings.cta}}</p>
+            </button>
+      </form>
+    </div>
+</div>
+
+
+<style>
+
+button[is="grab-bag"] {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    outline: inherit;
+    z-index: 100;
+}
+
+.gb-center{
+    text-align:center;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 90px;
+    height: 90px;
+    /*background: url("{{ 'Gift-box-pink---vector-PNG.png' | asset_img_url: '80x80' }}") center;*/
+    padding: 0;
+    font: inherit;
+    z-index: 100;
+}
+
+.overlay-text{
+    margin-top:50%;
+}
+
+.notification{
+    border-radius: 50%;
+    background-color: rgb(255, 0, 0);
+    width: 20px;
+    height: 20px;
+    z-index: 1001;
+    margin-left:10%;
+}
+
+.notification-text{
+    font-family: 'Roboto Slab', serif;
+    color: white;
+    position:relative;
+    bottom:25%
+}
+
+.pop-up-container {  
+    display: grid;  
+    grid-template-columns: 100px 100px 100px;  
+    grid-template-rows: 50px 50px;  
+}
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 2; /* Sit on top */
+    bottom: 15%;
+    right: 20px;
+    width: 35vw;
+    height: 50vh; 
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    border-radius: 5px;
+    text-align: center;
+}
+
+/* Modal Content/Box */
+.modal-content {
+    position: absolute; /* Stay in place */
+    height: 100%; 
+    background-color: #fefefe;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 100%; /* Could be more or less, depending on screen size */
+    z-index: 1; /* Sit on top */
+    border-radius: 5px;
+    overflow: auto; /* Enable scroll if needed */
+    display: block;
+    margin: 0 auto;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.modal-content::-webkit-scrollbar {
+  display: none;
+}
+
+.hidden{
+    display:none;
+}
+
+.closed{
+    display:none;
+}
+
+.variant-option{
+    border-bottom:#888 1px solid;
+    padding:5px;
+    align-content: center;
+    border-radius:5px;
+}
+
+.variant-option:hover{
+    border:green 1px solid;
+    padding:5px;
+    align-content: center;
+    border-radius:5px;
+    background-color: rgb(149, 231, 170);
+}
+
+.modal-image{
+    margin-top:10%;
+}
+
+.modal-variant-title{
+    margin-left:10%;
+}
+
+.selected{
+    background-color: rgb(38, 196, 130);
+}
+
+
+.gb-submit-button{
+    border: none;
+    outline: none;
+    background: #2f2f2f;
+    color: #fff;
+    font-size: 22px;
+    border-radius: 40px;
+    text-align: center;
+    box-shadow: 0 6px 20px -5px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    top:10px;
+    display: block;
+    margin: 0 auto;
+}
+
+.gb-active{
+    background: #079b33;
+    transition: 1s;
+}
+
+.gb-material-icons{
+    display:inline-block;
+    margin-top:15%;
+    font-size:48px;
+}
+
+.active .check-box{
+    right: 0;
+    opacity: 1;
+    transition: 0.3s;
+}
+
+.bell .material-icons { 
+  /* font-size:12rem !important; */
+  /* font-size:36px !important; */
+  font-size:3rem !important;
+}
+
+.bell {
+  position:relative;
+  display:inline-block;  
+  /* border:dashed 1px rgba(0,0,0,.25); */
+  margin:0;
+  padding:0; 
+  right:-40%;
+  bottom:40%; 
+}
+
+.bell .anchor {
+  transform-origin:center top;
+  display:inline-block;
+  margin:0;
+  padding:0;       
+}
+
+.bell .layer-1 {
+  color:#1d1e22;
+  z-index:9;
+  animation: animation-layer-1 5000ms infinite;      
+  opacity:0;  
+}
+
+.bell .layer-2 {
+  color:#1d1e22;
+  z-index:8;
+  position:absolute;top:0;left:0;   
+  animation: animation-layer-2 5000ms infinite;    
+}
+
+.bell .layer-3 {
+  color:#333642;
+  z-index:7;
+  position:absolute;top:0;left:0; 
+  animation: animation-layer-3 5000ms infinite;    
+}
+
+@keyframes animation-layer-1 {
+  0% { transform: rotate(0deg);opacity:0; }
+  8.0% { transform: rotate(0deg);opacity:0; }
+  12.0% { transform: rotate(42deg);opacity:.5; }
+  16.0% { transform: rotate(-35deg);opacity:.4; }
+  20.0% { transform: rotate(0deg);opacity:.1; }
+  23.0% { transform: rotate(28deg);opacity:.3; }
+  26.0% { transform: rotate(-20deg);opacity:.2; }
+  29.0% { transform: rotate(0deg);opacity:.1; }
+  31.0% { transform: rotate(16deg);opacity:0; }
+  33.0% { transform: rotate(-12deg);opacity:0; }
+  35.0% { transform: rotate(0deg);opacity:0; }	
+  37.0% { transform: rotate(-6deg);opacity:0; }
+  39.0% { transform: rotate(0deg);opacity:0; }
+}
+
+@keyframes animation-layer-2 {
+  0% { transform: rotate(0deg); }
+  8.0% { transform: rotate(0deg); }
+  12.0% { transform: rotate(42deg); }
+  16.0% { transform: rotate(-35deg); }
+  20.0% { transform: rotate(0deg); }
+  23.0% { transform: rotate(28deg); }
+  26.0% { transform: rotate(-20deg); }
+  29.0% { transform: rotate(0deg); }
+  31.0% { transform: rotate(16deg); }
+  33.0% { transform: rotate(-12deg); }
+  35.0% { transform: rotate(0deg); }	
+  37.0% { transform: rotate(-6deg); }
+  39.0% { transform: rotate(0deg); }
+  40.0% { transform: rotate(6deg); }
+  44.0% { transform: rotate(-3deg); }
+  49.0% { transform: rotate(2deg);}
+  55.0% { transform: rotate(0deg); }
+  62.0% { transform: rotate(1deg); }
+  70.0% { transform: rotate(0deg); }  
+}
+
+@keyframes animation-layer-3 {
+  0% { transform: rotate(0deg);opacity:1; }
+  8.0% { transform: rotate(0deg);opacity:1; }
+  12.0% { transform: rotate(52deg);opacity:.5; }
+  16.0% { transform: rotate(-48deg);opacity:.4; }
+  20.0% { transform: rotate(0deg);opacity:1; }
+  23.0% { transform: rotate(42deg);opacity:.3; }
+  26.0% { transform: rotate(-30deg);opacity:.2; }
+  29.0% { transform: rotate(0deg);opacity:1; }
+  31.0% { transform: rotate(26deg);opacity:.15; }
+  33.0% { transform: rotate(-18deg);opacity:.1; }
+  35.0% { transform: rotate(0deg);opacity:1; }	
+  37.0% { transform: rotate(-12deg);opacity:.8; }
+  40.0% { transform: rotate(6deg);opacity:1; }
+  44.0% { transform: rotate(-3deg);opacity:.8; }
+  49.0% { transform: rotate(2deg);opacity:1; }
+  55.0% { transform: rotate(0deg);opacity:1; }
+  62.0% { transform: rotate(1deg);opacity:1; }
+  70.0% { transform: rotate(0deg);opacity:1; }
+}
+
+</style>
+
+<script>
+    function closeDiv(){
+        var x = document.getElementById("gb-pop-up");
+        if (x.style.display === "none") {
+            x.style.display = "grid";
+        } else {
+            x.style.display = "none";
+        }
+    }
+
+    function variantSelected(id){
+        var idInput = document.getElementById("gb-idInput");
+        var x = document.getElementById(id);
+        var elements = document.getElementsByClassName("variant-option");
+        if(x.classList.contains("selected")){
+            x.classList.remove("selected");
+            idInput.setAttribute("value", "");
+        }
+        else{
+            x.classList.add("selected");
+            idInput.setAttribute("value", id);
+        }
+        for(i=0; i<elements.length;i++){
+            if(elements[i].classList.contains("selected")){
+                if(elements[i].id != id){
+                    elements[i].classList.remove("selected");
+                }
+            }
+        }
+    }
+
+
+    function formSubmit(){
+        var idInput = document.getElementById("gb-idInput");
+        var inputValue = idInput.value.toString();
+        const btn = document.querySelector("#gb-submit-btn");
+        const btnText = document.querySelector("#btnText");
+        if(!inputValue.trim().length){
+            btnText.innerHTML = "Select a Gift!";
+            return(false);
+        }
+        else{
+            document.getElementById('gb-select-form').submit();
+            btnText.innerHTML = "Thanks!";
+            btn.classList.add("gb-active");
+            return(true);
+        }
+    }
+
+</script>
+
+
+{% schema %}
+{
+    "name":"Floating embed",
+    "target":"body",
+    "javascript": "grab-bag.js",
+    "settings": [
+        {"type":"product","id":"product","label":"product","autofill":false},
+        {"type":"text","id":"cta","label":"Call To Action","default":"Add To Cart"},
+        {"type":"number","id":"cart_threshold","label":"Minimum Order Value"},
+        {"type":"number","id":"product_price","label":"Price of Gift (in dollar value)"},
+        {"type":"number","id":"amt_of_products","label":"Amount of Products","default":3},
+        {"type": "color", "id": "iconColour", "label": "Icon Colour", "default": "#000000"},
+        {"type": "color", "id": "bgColour", "label": "Background Colour", "default": "#ffffff"}
+    ]
+}
+{% endschema %}
+
+
