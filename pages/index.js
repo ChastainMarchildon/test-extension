@@ -4,10 +4,10 @@ const Index = () => (
   <Page>
     <Layout>
       <Layout.Section>
-        <Card title="Welcome to #APPNAME" sectioned>
+        <Card title="Welcome to GiftBasket" sectioned>
           <MediaCard
                   title="Getting Started"
-                  description="In order to use #APPNAME, you'll need to set up a coupon that allows the customer to claim the free gift."
+                  description="In order to use GiftBasket, you'll need to set up a coupon that allows the customer to claim the free gift."
                 >
                   <img
                     alt=""
@@ -35,7 +35,7 @@ const Index = () => (
         <Card title="Setup Steps for Customizing the app" sectioned>
           <List type="number">
             <List.Item>From the Shopify dashboard, navigate to your theme customization page.</List.Item>
-            <List.Item>Click on "Theme Settings" in the bottom left and then on "App Embeds" then, find #APPNAME</List.Item>
+            <List.Item>Click on "Theme Settings" in the bottom left and then on "App Embeds" then, find GiftBasket</List.Item>
             <List.Item>The 2 important parts here are selecting the <bold>exact same item</bold> that you did when setting up the discount page, as well as the same price.</List.Item>
             <List.Item>The rest of the settings here are up to you to adjust to fit your needs!</List.Item>
           </List>
