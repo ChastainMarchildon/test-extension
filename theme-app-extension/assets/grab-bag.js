@@ -3,22 +3,17 @@ class GrabBag extends HTMLButtonElement  {
       super();
       this.listen();
     }
-    /*
-    connectedCallback() {
-        this.addEventListener('click', this.getCartContents)
-    }
-    */
-  
-    async getCartContents(){
-        const result = await fetch("/cart.json");
 
-        if (result.status === 200) {
-            return result.json(); 
-        }
 
-    }
-
-    listen() {
+    listen(collectionArray) {
+      var collectionArray;
+      var collection = document.getElementById("gb-collection");
+      collection = collection.getAttribute('value');
+      fetch('/admin/api/2022-01/collections/' + collection + '/products.json')
+                .then(res => res.json())
+                .then(responseData => {
+                  collectionArray = responseData;
+                  });
 
         const observer = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
@@ -28,8 +23,11 @@ class GrabBag extends HTMLButtonElement  {
                 .then(res => res.json())
                 .then(responseData => {
                     console.log(responseData);
-                    this.updateWidget(responseData);
+                    this.updateWidget(responseData,collectionArray);
                   })
+                .catch(function(error) {
+                    this.updateErrorMessage();
+                });
               }
               else if(entry.initiatorType === "navigation"){
                 console.log('Navigation request detected to', entry.name);               
@@ -37,8 +35,11 @@ class GrabBag extends HTMLButtonElement  {
                 .then(res => res.json())
                 .then(responseData => {
                     console.log(responseData);
-                    this.updateWidget(responseData);
+                    this.updateWidget(responseData,collectionArray);
                   })
+                  .catch(function(error) {
+                    this.updateErrorMessage();
+                });
               }
             }
           });
@@ -49,20 +50,35 @@ class GrabBag extends HTMLButtonElement  {
 
     }
 
-    updateWidget(cartArray){
-        var current = cartArray.items_subtotal_price / 100;
+    updateWidget(cartArray, collectionArray){
+        var current = 0;
         var thresholdPrice = document.getElementById("grab-bag").getAttribute("threshold") /100;
         var formatter = new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
           });
-        if(current > thresholdPrice){
+        
+        for(i=0; i< cartArray.items.length; i++){
+          for(x=0; x < collectionArray.products.length; x++){
+            if(collectionArray.products[x].handle === cartArray.items[i].handle){
+              var itemTotal = cartArray.items[i].final_price * cartArray.items[i].quantity
+              current += itemTotal;
+              console.log(cartArray.items[i].handle);
+            }
+          }
+        }
+        current = current / 100;
+        console.log(current);
+        console.log(thresholdPrice);
+        if(current >= thresholdPrice){
             var e = document.getElementById("gb-overlayContent");
             var x = document.getElementById("gb-giftContent");
+            var notification = document.getElementById("gb-Notification");
             for(var i = 0; i<cartArray.items.length; i++){
                 if(cartArray.items[i].discounts.length > 0){
                     e.innerHTML = "Gift Added"
                     x.style.display = "none";
+                    notification.style.display = "grid";
                     return;
                 }
                 else{
@@ -79,23 +95,10 @@ class GrabBag extends HTMLButtonElement  {
             difference = formatter.format(difference);
             e.style.display = "grid"
             x.style.display = "none"
-            e.innerHTML = "You're "+ difference + " away from a free gift!"
+            e.innerHTML = "You're "+ difference + " away from a gift!" 
             console.log("under threshhold")
         }
     }
-
-    get thresholdPrice() {
-        return this.getAttribute('threshold');
-      }
-
-    set thresholdPrice(val) {
-        if (val == null) { // check for null and undefined
-          this.removeAttribute('videoid');
-        }
-        else {
-          this.setAttribute('threshold', val);
-        }
-      }
     
 
   }
