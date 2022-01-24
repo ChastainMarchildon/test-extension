@@ -69,13 +69,42 @@ app.prepare().then(async () => {
   const server = new Koa();
   const router = new Router();
   server.keys = [Shopify.Context.API_SECRET_KEY];
+  let useOfflineAccessToken = false;
+
+  // Uncomment to use offline and online access tokens
+
+  // useOfflineAccessToken = true;
+
+  // server.use(
+  //   createShopifyAuth({
+  //     accessMode: "offline",
+  //     prefix: "/install",
+  //     async afterAuth(ctx) {
+  //       const { shop, accessToken, scope } = ctx.state.shopify;
+  //       const host = ctx.query.host;
+
+  //       const result = await ShopModel.findOne({ shop: shop });
+
+  //       if (!result) {
+  //         await ShopModel.create({
+  //           shop: shop,
+  //           accessToken: cryption.encrypt(accessToken),
+  //           scope: scope,
+  //         }).then(() => ctx.redirect(`/auth?shop=${shop}&host=${host}`));
+  //       } else {
+  //         ctx.redirect(`/auth?shop=${shop}&host=${host}`);
+  //       }
+  //     },
+  //   })
+  // );
+
   server.use(
     createShopifyAuth({
       async afterAuth(ctx) {
         // Access token and shop available in ctx.state.shopify
         const { shop, accessToken, scope } = ctx.state.shopify;
         const host = ctx.query.host;
-        ACTIVE_SHOPIFY_SHOPS[shop] = scope;
+        //ACTIVE_SHOPIFY_SHOPS[shop] = scope;
 
         const response = await Shopify.Webhooks.Registry.register({
           shop,
@@ -128,12 +157,40 @@ app.prepare().then(async () => {
     const shop = ctx.query.shop;
 
     // This shop hasn't been seen yet, go through OAuth to create a session
-    if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
+  //   if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
+  //     ctx.redirect(`/auth?shop=${shop}`);
+  //   } else {
+  //     await handleRequest(ctx);
+  //   }
+  // });
+
+  if (useOfflineAccessToken) {
+    const isInstalled = await ShopModel.countDocuments({ shop });
+
+    if (isInstalled === 0) {
+      ctx.redirect(`/install/auth?shop=${shop}`);
+    } else {
+      const findShopCount = await SessionModel.countDocuments({ shop });
+
+      if (findShopCount < 2) {
+        await SessionModel.deleteMany({ shop });
+        ctx.redirect(`/auth?shop=${shop}`);
+      } else {
+        await handleRequest(ctx);
+      }
+    }
+  } else {
+    const findShopCount = await SessionModel.countDocuments({ shop });
+
+    if (findShopCount < 2) {
+      await SessionModel.deleteMany({ shop });
       ctx.redirect(`/auth?shop=${shop}`);
     } else {
       await handleRequest(ctx);
     }
-  });
+  }
+});
+
 
   server.use(router.allowedMethods());
   server.use(router.routes());
