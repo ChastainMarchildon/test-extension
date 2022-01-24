@@ -1,14 +1,39 @@
 import "@babel/polyfill";
-import dotenv from "dotenv";
 import "isomorphic-fetch";
-import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
-import Shopify, { ApiVersion } from "@shopify/shopify-api";
-import Koa from "koa";
-import next from "next";
-import Router from "koa-router";
-import { getSubscriptionUrl, createClient } from "./handlers";
-import { getAppSubscriptionStatus } from "./handlers/mutations/get-subscription-url";
 
+import Shopify, { ApiVersion } from "@shopify/shopify-api";
+import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
+import { getSubscriptionUrl, createClient } from "./handlers";
+import Cryptr from "cryptr";
+import Koa from "koa";
+import Router from "koa-router";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import next from "next";
+import { webhooks } from "../webhooks/index.js";
+
+const sessionStorage = require("./../utils/sessionStorage.js");
+const SessionModel = require("./../models/SessionModel.js");
+const ShopModel = require("./../models/ShopModel.js");
+
+const mongoUrl =
+  process.env.MONGO_URL || "mongodb://127.0.0.1:27017/shopify-app";
+
+mongoose.connect(
+    mongoUrl,
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    },
+    (err) => {
+      if (err) {
+        console.log("--> There was an error connecting to MongoDB:", err.message);
+      } else {
+        console.log("--> Connected to MongoDB");
+      }
+    }
+  );
+  
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -23,15 +48,22 @@ Shopify.Context.initialize({
   API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
   SCOPES: process.env.SCOPES.split(","),
   HOST_NAME: process.env.HOST.replace(/https:\/\/|\/$/g, ""),
-  API_VERSION: ApiVersion.October20,
+  API_VERSION: "2022-01",
   IS_EMBEDDED_APP: true,
-  // This should be replaced with your preferred storage strategy
-  SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
+  SESSION_STORAGE: sessionStorage,
 });
 
 // Storing the currently active shops in memory will force them to re-login when your server restarts. You should
 // persist this object in your app.
-const ACTIVE_SHOPIFY_SHOPS = {};
+//const ACTIVE_SHOPIFY_SHOPS = {};
+
+for (const webhook of webhooks) {
+  Shopify.Webhooks.Registry.webhookRegistry.push({
+    path: webhook.path,
+    topic: webhook.topic,
+    webhookHandler: webhook.webhookHandler,
+  });
+}
 
 app.prepare().then(async () => {
   const server = new Koa();
@@ -98,10 +130,8 @@ app.prepare().then(async () => {
     // This shop hasn't been seen yet, go through OAuth to create a session
     if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
       ctx.redirect(`/auth?shop=${shop}`);
-      console.log("auth");
     } else {
       await handleRequest(ctx);
-      console.log("handle request");
     }
   });
 
